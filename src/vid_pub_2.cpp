@@ -10,6 +10,7 @@ using namespace std;
 int main(){
     VideoCapture cap("/workspaces/isaac_ros-dev/isaac_ros-dev/sample_video/AprilTag_test_video.mp4");
     
+    
     if (!cap.isOpened()) {
 		cerr << "Camera open failed!" << endl;
 		return 0;
