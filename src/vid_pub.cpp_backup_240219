@@ -6,7 +6,6 @@
 #include <opencv2/opencv.hpp>
 #include <filesystem>
 #include <iostream>
-#include <cv_bridge/cv_bridge.h>
 
 using namespace std;
 
@@ -15,11 +14,9 @@ public:
   VideoPublisher() : Node("video_publisher"), count_(0) {
     publisher_ = this->create_publisher<sensor_msgs::msg::Image>("image", 10);
     camera_info_publisher_ = this->create_publisher<sensor_msgs::msg::CameraInfo>("camera_info", 10);
-
-    // 원래는 아래 publishVideo() 함수를 실행하는 타이머 - 20240218 백업
-    // timer_ = this->create_wall_timer(
-    //     std::chrono::milliseconds(100),
-    //     std::bind(&VideoPublisher::publishVideo, this));
+    timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(100),
+        std::bind(&VideoPublisher::publishVideo, this));
 
     // 원래는 아래에 있던거
     
@@ -34,8 +31,6 @@ public:
       RCLCPP_ERROR(this->get_logger(), "Error opening video file");
       return;
     }
-
-    publishVideo2();
   }
 
 private:
@@ -102,106 +97,12 @@ private:
     RCLCPP_INFO(this->get_logger(), "%zu\n", count_);
   }
 
-  void publishVideo2() {
-    // loop of publish frames
-    while (rclcpp::ok()){
-      cv::Mat frame;
-      cap_ >> frame;
-
-      if (frame.empty()) {
-        // End of video file
-        RCLCPP_INFO(this->get_logger(), "End of video file");
-        break;
-      }
-
-      // Original code
-      sensor_msgs::msg::Image msg;
-      msg.header.stamp = this->get_clock()->now();
-      // msg.header.frame_id = "camera_frame";
-      // msg.height = frame.rows;
-      // msg.width = frame.cols;
-      // msg.encoding = "bgr8";
-      // msg.is_bigendian = false;
-      // msg.step = frame.cols * 3;
-      // size_t size = frame.rows * frame.cols * 3;
-      // msg.data.resize(size);
-
-      // // Copy the image data from the OpenCV matrix to the ROS message
-      // memcpy(msg.data.data(), frame.data, size);
-
-      // publisher_->publish(msg);
-
-
-      // New code
-      // Convert OpenCV frame to ROS message
-      auto img_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", frame).toImageMsg();
-
-      // Publish ROS message
-      publisher_->publish(*img_msg);
-
-      // Sleep to control publishing rate
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // 100
-
-
-      // Original code
-      // Set camera information
-      float fx = 1285.711823560571474;
-      float fy = 1290.706327751410072;
-      // float fx = 585.711;
-      // float fy = 590.706;
-
-
-      float cx = 834.975118301024850;
-      float cy = 628.697079583048776;
-      // float cx = 480.975;
-      // float cy = 360.697;
-
-      // Publish CameraInfo message
-      sensor_msgs::msg::CameraInfo camera_info_msg;
-      camera_info_msg.header = msg.header;
-      // camera_info_msg.height = 1200; // msg.height;
-      // camera_info_msg.width = 1600; // msg.width;
-      camera_info_msg.height = 720; // msg.height;
-      camera_info_msg.width = 960; // msg.width;
-      camera_info_msg.distortion_model = "plumb_bob";  // Update with the correct distortion model
-
-      // Set camera matrix
-      camera_info_msg.k[0] = fx;
-      camera_info_msg.k[4] = fy;
-      camera_info_msg.k[2] = cx;
-      camera_info_msg.k[5] = cy;
-      camera_info_msg.k[8] = 1.0;
-
-      // Set rectification matrix
-      camera_info_msg.r[0] = 1.0;
-      camera_info_msg.r[4] = 1.0;
-      camera_info_msg.r[8] = 1.0;
-
-      // Set projection matrix
-      camera_info_msg.p[0] = fx;
-      camera_info_msg.p[5] = fy;
-      camera_info_msg.p[2] = cx;
-      camera_info_msg.p[6] = cy;
-      camera_info_msg.p[10] = 1.0;
-
-      camera_info_publisher_->publish(camera_info_msg);
-
-      ++count_;
-
-      // // Display the frame using OpenCV imshow
-      // cv::imshow("Frame", frame);
-      // cv::waitKey(1);  // Add a short delay to display the frame
-      RCLCPP_INFO(this->get_logger(), "%zu\n", count_);
-    }
-  }
-
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_;
   rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_publisher_;
   size_t count_;
   cv::VideoCapture cap_;
 };
-  
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);

@@ -1,0 +1,15 @@
+name: ros2_apriltag_gpu
+root: ./
+startup_window: window0
+windows:
+        - window0:
+                layout:
+                panes:
+                        - source install/setup.bash; sleep 2; ros2 topic echo /tag_detections | grep -i x
+        - window1:
+                layout: tiled
+                panes:
+                        - source install/setup.bash && ros2 launch isaac_ros_apriltag isaac_ros_apriltag.launch.py
+                        - source install/setup.bash; sleep 1; ros2 run vid_publisher vid_pub
+                        - source isaac_ros_1-dev/install_isolated/setup.bash && source isaac_ros-dev/install/setup.bash; sleep 1; export ROS_MASTER_URI=http://localhost:11311 && ros2 run ros1_bridge dynamic_bridge --bridge-all-topics
+                        - source /opt/ros/noetic/setup.bash && roscore

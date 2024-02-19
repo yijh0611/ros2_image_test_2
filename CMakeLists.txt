@@ -31,6 +31,7 @@ ament_target_dependencies(vid_pub
   std_msgs
   sensor_msgs
   OpenCV
+  cv_bridge
 )
 install(TARGETS vid_pub
   DESTINATION lib/${PROJECT_NAME}
